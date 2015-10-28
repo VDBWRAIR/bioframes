@@ -17,7 +17,7 @@ df.MAPQ.apply(np.mean)
 ref = df.RNAME.unique()[0]
 dfr = df[df.RNAME == r] 
 ```
-
+```python 
 # find the Reference with the highest average mapping quality
 # MAPQ is stored internally as a numpy array
 max(ifilterfalse(lambda x: '*' == x[0], df.groupby(['RNAME'])), key=lambda x: x[1].MAPQ.apply(np.mean).mean())[0]
@@ -46,6 +46,8 @@ Index([u'AS', u'CIGAR', u'FLAG', u'MAPQ', u'NM', u'PCR or optical duplicate',
        u'the last segment in the template'],
       dtype='object')
 ```
+
+etc.
 
 ``` python
 len(df.groupby(['QNAME']))
