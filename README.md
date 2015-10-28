@@ -2,15 +2,21 @@
 Create a histogram of map positions:
 ```python 
 from bioframes import samframe
-samframe.load_sam(open('780.sam')) 
-df.RNAME.unique() 
-dfr = df[df.RNAME == r] 
+import pylab
+pylab.tight_layout()
+df = samframe.load_sam(open('780.sam')) 
 %pylab inline
-dfr.hist(column='POS')
+df.hist(column='POS', by=['RNAME'])
 ```
 
+![histogram](./hist.png)
+
 ```python
-df.MAPQ.apply(np.mean)
+#average mapquality by mapping
+df.MAPQ.apply(np.mean) 
+ref = df.RNAME.unique()[0]
+dfr = df[df.RNAME == r] 
+```
 
 # find the Reference with the highest average mapping quality
 # MAPQ is stored internally as a numpy array
