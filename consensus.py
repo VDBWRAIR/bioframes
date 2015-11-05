@@ -1,6 +1,7 @@
 from bioframes import bioframes
 from Bio import SeqIO
-
+#NOTE: freebayes requires ALL reads to be tagged with an RG, which requires a slight change to
+# tagreads.py:  https://github.com/VDBWRAIR/ngs_mapper/blob/9523d32effd268543611b60758991a99373a65f5/ngs_mapper/tagreads.py#L56-L59
 # (only two degenerate bases in this alignment)
 get_degen = {('A', 'C') : 'M', ('C', 'A') : 'M', \
              ('A', 'G') : 'R', ('G', 'A') : 'R'}.__getitem__
