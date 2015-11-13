@@ -1,3 +1,4 @@
+from __future__ import print_function
 from bioframes import bioframes
 from Bio import SeqIO
 from toolz.functoolz import compose
@@ -8,6 +9,7 @@ import sh
 
 
 '''
+use this to create consensus, and bioframes.py to create the VCF comparison
 #NOTE: freebayes requires ALL reads to be tagged with an RG, which requires a slight change to
 # tagreads.py:  https://github.com/VDBWRAIR/ngs_mapper/blob/9523d32effd268543611b60758991a99373a65f5/ngs_mapper/tagreads.py#L56-L59
 # (only two degenerate bases in this alignment)
@@ -28,9 +30,13 @@ freebayes-consesnsus, ngs-consensus
 freeabyesvcf, ngs-vcf
 -> vcf comparison report
 '''
+''' how to handle file globbing and multiple dirs at once? And: a compiled report as final task target?'''
 AMBIGUITY_TABLE = { 'A': 'A', 'T': 'T', 'G': 'G', 'C': 'C', 'N': 'N', 'AC': 'M', 'AG': 'R', 'AT': 'W', 'CG': 'S', 'CT': 'Y', 'GT': 'K', 'ACG': 'V', 'ACT': 'H', 'AGT': 'D', 'CGT': 'B', 'ACGT': 'N' }
 get_degen = compose(AMBIGUITY_TABLE.__getitem__, ''.join, sorted)
 insert_gap = lambda s, x: s[:x]+ '-' + s[x+1:]
+from operator import methocaller as call
+def make_dict(classes):
+    return dict(zip(map(call('__name__'), classes, classes)))
 
 def fix_fb_df(df):
     #Freebayes only ever reports one ALT?
@@ -43,6 +49,8 @@ def fix_fb_df(df):
     df['OFF'] = df.ALT.apply(len) - df.REF.apply(len)
     return df
 
+
+string_to_fasta = '>FreebayesConseunsus\n'.__add__
 def make_consensus(bam_file, ref_file, freebayes_vcf):
     ''':retrurn str'''
     fa = SeqIO.parse(ref_file, 'fasta')
@@ -87,3 +95,8 @@ def drop_gaps_because_insertion_offsets(A, off_pos):
 def partition(pred, seq):
     t1, t2 = itertools.tee(seq)
     return itertools.ifilterfalse(pred, t1), itertools.ifilter(pred, t2)
+
+
+main = compose(print, string_to_fasta, make_consensus)
+
+if __name__ == '__main__': main()
