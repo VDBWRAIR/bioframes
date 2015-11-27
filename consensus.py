@@ -34,18 +34,23 @@ freeabyesvcf, ngs-vcf
 AMBIGUITY_TABLE = { 'A': 'A', 'T': 'T', 'G': 'G', 'C': 'C', 'N': 'N', 'AC': 'M', 'AG': 'R', 'AT': 'W', 'CG': 'S', 'CT': 'Y', 'GT': 'K', 'ACG': 'V', 'ACT': 'H', 'AGT': 'D', 'CGT': 'B', 'ACGT': 'N' }
 get_degen = compose(AMBIGUITY_TABLE.__getitem__, ''.join, sorted)
 insert_gap = lambda s, x: s[:x]+ '-' + s[x+1:]
-from operator import methocaller as call
+from operator import methodcaller as call
 def make_dict(classes):
     return dict(zip(map(call('__name__'), classes, classes)))
-
+#TODO: fix ambiguous base definition
+#TODO: this doesn't work for flu sequences which have multiple sections, \
+#    and the  VCFs have multiple references. need to group by reference
 def fix_fb_df(df):
     #Freebayes only ever reports one ALT?
     df.ALT = df.ALT.apply(lambda x: x[0])
     # the vcf library reports alts as _Substitution/whatever objects. extract the string.
     df.REF, df.ALT = df.REF.apply(str), df.ALT.apply(str)
+    '''#TODO: this re-definition of ambiguous bases translates mult-base
+    sections (e.g. AC) into single base alts or something'''
     ambiguous = ((df.AO / df.DP.apply(float)) < 0.8)
     #have to use .loc for assignment or else get shallow copy warning
-    df.loc[ambiguous, 'ALT'] = list(map(get_degen, zip(df.loc[ambiguous].REF, df.loc[ambiguous].ALT)))
+    #NOTE: temporarily removed the amiguous base business.
+    #df.loc[ambiguous, 'ALT'] = list(map(get_degen, zip(df.loc[ambiguous].REF, df.loc[ambiguous].ALT)))
     df['OFF'] = df.ALT.apply(len) - df.REF.apply(len)
     return df
 
@@ -77,7 +82,7 @@ def swap_base(seq_and_offset, info):
     because insertions push the string back each time.'''
     (seq, offset), (POS, REF, ALT) = seq_and_offset, info
     result = seq[:POS-1+offset] + ALT + seq[POS-1+len(REF)+offset:]
-    assert len(ALT) >= len(REF)
+    assert len(ALT) >= len(REF), "length of alt and ref not the same at position %s %s %s" % (POS, ALT, REF)
     #should add N's or - for deletion for consistency with ngs_mapper
     new_offset = offset + (len(ALT) - len(REF))
     return result, new_offset
@@ -97,6 +102,6 @@ def partition(pred, seq):
     return itertools.ifilterfalse(pred, t1), itertools.ifilter(pred, t2)
 
 
-main = compose(print, string_to_fasta, make_consensus)
-
+consensus_str = compose(string_to_fasta, make_consensus)
+main = compose(print,consensus_str)
 if __name__ == '__main__': main()
