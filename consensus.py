@@ -5,30 +5,11 @@ from toolz.functoolz import compose
 from toolz.itertoolz import map, zip, second, drop, nth, iterate
 import itertools
 import sh
-''' samtools mpileup -cf ref.fasta hu.bam -g | bcftools view  -'''
-
 
 '''
 use this to create consensus, and bioframes.py to create the VCF comparison
 #NOTE: freebayes requires ALL reads to be tagged with an RG, which requires a slight change to
 # tagreads.py:  https://github.com/VDBWRAIR/ngs_mapper/blob/9523d32effd268543611b60758991a99373a65f5/ngs_mapper/tagreads.py#L56-L59
-# (only two degenerate bases in this alignment)
-plumbum?
-# use luigi.ExternalTask
-
-bamfile -> tagged bam
-
-taggedbam, reffile
--> freebayevcf
-
-freebayesvcf
--> freebayes-consensus
-
-freebayes-consesnsus, ngs-consensus
--> comparison report
-
-freeabyesvcf, ngs-vcf
--> vcf comparison report
 '''
 ''' how to handle file globbing and multiple dirs at once? And: a compiled report as final task target?'''
 AMBIGUITY_TABLE = { 'A': 'A', 'T': 'T', 'G': 'G', 'C': 'C', 'N': 'N', 'AC': 'M', 'AG': 'R', 'AT': 'W', 'CG': 'S', 'CT': 'Y', 'GT': 'K', 'ACG': 'V', 'ACT': 'H', 'AGT': 'D', 'CGT': 'B', 'ACGT': 'N' }

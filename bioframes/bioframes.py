@@ -2,8 +2,6 @@ from __future__ import print_function
 from functools import partial
 from Bio import SeqIO
 import numpy as np
-#from past.builtins import map, filter
-#from bioframes import sequenceframes
 from operator import attrgetter as attr
 from operator import add, div
 from func import partial2,  pmap, pifilter,  \
@@ -26,12 +24,6 @@ Pileup
 Join VCF and Pileup
 '''
 
-'''
-pcompose = partial(partial, compose)
-error_from_ints = pcompose(error)
-#sanger_qual_str_to_error = cmperror(qual_to_phreds)
-
-'''
 get_fastq = partial(SeqIO.parse, format='fastq')
 get_fasta = partial(SeqIO.parse, format='fasta')
 to_np_int = partial(np.array, dtype=int)
@@ -45,11 +37,7 @@ qual_to_phreds = compose(to_np_int, pmap(qual_int_sanger))
 error = compose(partial(pow, 10), partial2(div, -10.0))
 #don't need to map because numpy vectorizes it automatically
 #TODO: handle non-sanger version
-sanger_qual_str_to_error = compose(error, qual_to_phreds)
-
-
-#
-##
+sanger_qual_str_to_error = compose(error, qual_to_phreds) 
 #SANGER_OFFSET = 33
 
 '''
@@ -61,9 +49,7 @@ assert len(quality) == len(error) == len(phred_scores)
 #TODO: could make these validations match samtools spec
 #TODO: Could treat options/cigar string as their own class with their own parsing and validation.
 
-#
-def flatten_vcf(record):
-
+def flatten_vcf(record): 
     '''
     :param VCFRecord record: VCFRecord object
     :return dict: all fields as a flat dictionary, including those fields in rec.INFO
@@ -92,8 +78,10 @@ def load_vcf_list(vcf_records):
     Convert a list of vcf Records to a pandas DataFrame.
     '''
     return pd.DataFrame(flatten_vcf(rec) for rec in vcf_records)
+
 flatten_list = lambda a: a if type(a) != list else a[0]
 load_vcf  = compose(load_vcf_list, vcf.Reader, open)
+
 #TODO: properly handle [None], '-', etc.
 
 #have one return the true/false series and the other do getitem i guess
@@ -115,8 +103,6 @@ def df_by_attrs(columns, collection):
     attr_getters = map(attr, columns)
     return collection_as_df(attr_getters, columns, collection)
 
-#
-
 #optionally dict(zip(columns, apply_each))
 #TODO: fix this, why doesn't repeat work?
 def makeframe(biodata):
@@ -128,8 +114,7 @@ def makeframe(biodata):
             break
     return pd.DataFrame(dicts)
 
-#make_dicts = pmap(biodata_to_row)
-
+#make_dicts = pmap(biodata_to_row) 
 #make_fastq_frame = kstarcompose(makeframe, sequenceframes.fqframe)
 
 def obj_to_dict(obj, names_getters_map):
