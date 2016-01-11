@@ -1,10 +1,14 @@
 from __future__ import print_function
+from itertools import imap, izip
 from bioframes import bioframes
 from Bio import SeqIO
+import sys
 from toolz.functoolz import compose
-from toolz.itertoolz import map, zip, second, drop, nth, iterate
+from toolz.itertoolz import map, zip, second, drop, nth, iterate, first
+from functools import partial
 import itertools
 import sh
+''' samtools mpileup -cf ref.fasta hu.bam -g | bcftools view  -'''
 
 '''
 use this to create consensus, and bioframes.py to create the VCF comparison
@@ -15,7 +19,7 @@ use this to create consensus, and bioframes.py to create the VCF comparison
 AMBIGUITY_TABLE = { 'A': 'A', 'T': 'T', 'G': 'G', 'C': 'C', 'N': 'N', 'AC': 'M', 'AG': 'R', 'AT': 'W', 'CG': 'S', 'CT': 'Y', 'GT': 'K', 'ACG': 'V', 'ACT': 'H', 'AGT': 'D', 'CGT': 'B', 'ACGT': 'N' }
 get_degen = compose(AMBIGUITY_TABLE.__getitem__, ''.join, sorted)
 insert_gap = lambda s, x: s[:x]+ '-' + s[x+1:]
-from operator import methodcaller as call
+from operator import methodcaller as call, attrgetter
 def make_dict(classes):
     return dict(zip(map(call('__name__'), classes, classes)))
 #TODO: fix ambiguous base definition
@@ -35,23 +39,33 @@ def fix_fb_df(df):
     df['OFF'] = df.ALT.apply(len) - df.REF.apply(len)
     return df
 
+pluck_attr = lambda a, A: map(attrgetter(a), A)
 
-string_to_fasta = '>FreebayesConseunsus\n'.__add__
+#string_to_fasta = '>FreebayesConseunsus\n'.__add__
+string_to_fasta = '>Freebayes {0}\n{1}'.format
 def make_consensus(bam_file, ref_file, freebayes_vcf):
     ''':retrurn str'''
-    fa = SeqIO.parse(ref_file, 'fasta')
-    original_ref = str(next(fa).seq)
-    df = fix_fb_df(bioframes.load_vcf(freebayes_vcf))
-    new_ref, off = reduce(swap_base, zip(df.POS, df.REF, df.ALT), (original_ref, 0))
-    #currently only handle inserts, > 0
-    offs, off_pos = df[df.OFF > 0].OFF, df[df.OFF > 0].POS
-    pileup_positions = zero_coverage_positions(bam_file, ref_file)
-    return gap_fill_ref(original_ref, new_ref, pileup_positions, offs, off_pos, off)
+    refs = list(SeqIO.parse(ref_file, 'fasta'))
+    df = bioframes.load_vcf(freebayes_vcf)
+    ids, raw_segment_dfs = zip(*df.groupby('CHROM'))
+    segment_dfs = map(fix_fb_df, raw_segment_dfs)
+    refs = sorted(refs, key=lambda x: x.id)
+    assert list(pluck_attr('id', refs)) == sorted(ids)
+    ref_seqs = (str(s.seq) for s in refs) #pluck_attr('seq', refs)
+    segment_dfs = sorted(segment_dfs, key=lambda x: x.CHROM.iloc[0])
+    def process(original_ref, df):
+         new_ref, off = reduce(swap_base, zip(df.POS, df.REF, df.ALT), (original_ref, 0))
+         #currently only handle inserts, > 0
+         offs, off_pos = df[df.OFF > 0].OFF, df[df.OFF > 0].POS
+         pileup_positions = zero_coverage_positions(bam_file, ref_file)
+         return gap_fill_ref(original_ref, new_ref, pileup_positions, offs, off_pos, off)
+    #return map(process, ref_seqs, segment_dfs)
+    return zip(sorted(ids), map(process, ref_seqs, segment_dfs))
 
 def gap_fill_ref(original_ref, new_ref, pileup_positions, offs, off_pos, off):
     raw_missings =  set(xrange(1, len(original_ref)+1)) - set(pileup_positions)
-    missings = reduce(drop_gaps_because_insertion_offsets, zip(offs, off_pos), raw_missings)
-    gap_filled = reduce(insert_gap, map(lambda x: x - 1, missings),  new_ref)
+    missings = reduce(drop_gaps_because_insertion_offsets, izip(offs, off_pos), raw_missings)
+    gap_filled = reduce(insert_gap, imap(lambda x: x - 1, missings),  new_ref)
     return nth(off, iterate(lambda s: s[:-1] if s[-1] == '-' else s, gap_filled))
 
 def zero_coverage_positions(bam_file, ref_file):
@@ -73,7 +87,7 @@ def drop_gaps_because_insertion_offsets(A, off_pos):
      position, where N is offset'''
     off, pos = off_pos
     before, after = partition(lambda x: x >= pos, A)
-    return itertools.chain.from_iterable([before, drop(off,  map(lambda x: x+off, after))])
+    return itertools.chain.from_iterable([before, drop(off,  imap(lambda x: x+off, after))])
 
 ''' set(ngs.POS.unique()) - set(fb.POS.unique())
  the above doesn't quite work because freebayes will report multi-base REFs & alts, like REF: ACG  ALT: ATA or the like.'''
@@ -83,6 +97,12 @@ def partition(pred, seq):
     return itertools.ifilterfalse(pred, t1), itertools.ifilter(pred, t2)
 
 
-consensus_str = compose(string_to_fasta, make_consensus)
+#consensus_str = compose(string_to_fasta, make_consensus)
+consensus_str = compose('\n'.join, partial(itertools.starmap, string_to_fasta), make_consensus)
 main = compose(print,consensus_str)
-if __name__ == '__main__': main()
+#expects bam_file, ref_file, freebayes_vcf):
+
+if __name__ == '__main__':
+    extension = lambda x: x.split('.')[-1]
+    bam, ref, vcf = sorted(sys.argv[1:], key=extension)
+    main(bam, ref, vcf)
