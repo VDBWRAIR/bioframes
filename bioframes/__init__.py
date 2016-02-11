@@ -1,3 +1,4 @@
+#from bioframes import consensus, bioframes
 __projectname__ = 'bioframes'
 __release__ = '0.0.1'
 __authors__ = "Michael Panciera"
