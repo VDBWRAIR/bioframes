@@ -12,8 +12,6 @@ setup(
     description = bioframes.__description__,
     license = "GPLv2",
     keywords = bioframes.__keywords__,
-    entry_points = {
-    },
     install_requires = [
        'pandas',
        'numpy',

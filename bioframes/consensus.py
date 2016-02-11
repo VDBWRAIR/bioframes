@@ -1,6 +1,6 @@
 from __future__ import print_function
 from itertools import imap, izip
-from bioframes import bioframes
+import bioframes #from bioframes import bioframes
 from Bio import SeqIO
 import sys
 from toolz.functoolz import compose
