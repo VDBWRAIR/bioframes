@@ -1,0 +1,9 @@
+pandas
+numpy
+schema
+pyparsing
+biopython
+pyvcf
+toolz
+sh
+mock

@@ -7,7 +7,7 @@ from operator import add, div
 from func import partial2,  pmap, pifilter,  \
        ilen, merge_dicts,  dictzip, \
     apply_to_object, dictmap
-from funcy import compose
+from toolz import compose
 import pandas as pd
 import vcf
 #TODO:
@@ -37,7 +37,7 @@ qual_to_phreds = compose(to_np_int, pmap(qual_int_sanger))
 error = compose(partial(pow, 10), partial2(div, -10.0))
 #don't need to map because numpy vectorizes it automatically
 #TODO: handle non-sanger version
-sanger_qual_str_to_error = compose(error, qual_to_phreds) 
+sanger_qual_str_to_error = compose(error, qual_to_phreds)
 #SANGER_OFFSET = 33
 
 '''
@@ -49,7 +49,7 @@ assert len(quality) == len(error) == len(phred_scores)
 #TODO: could make these validations match samtools spec
 #TODO: Could treat options/cigar string as their own class with their own parsing and validation.
 
-def flatten_vcf(record): 
+def flatten_vcf(record):
     '''
     :param VCFRecord record: VCFRecord object
     :return dict: all fields as a flat dictionary, including those fields in rec.INFO
@@ -114,7 +114,7 @@ def makeframe(biodata):
             break
     return pd.DataFrame(dicts)
 
-#make_dicts = pmap(biodata_to_row) 
+#make_dicts = pmap(biodata_to_row)
 #make_fastq_frame = kstarcompose(makeframe, sequenceframes.fqframe)
 
 def obj_to_dict(obj, names_getters_map):
